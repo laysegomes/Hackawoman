@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/features/meu-ciclo/meucicloapp.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/features/meu-ciclo/meucicloapp.tsx","./src/features/meu-ciclo/types.ts","./src/features/meu-ciclo/components/guardiamodule.tsx","./src/features/meu-ciclo/components/healthmodule.tsx"],"version":"5.9.3"}

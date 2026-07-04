@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import type { ReactNode } from "react";
 import {
-  Home, Calendar, Flower2, BarChart3, MoreHorizontal, ChevronRight, ChevronLeft,
+  Calendar, Flower2, ChevronRight, ChevronLeft,
   Bell, Pill, FileText, Target, Lock, Shield, Check, Fingerprint,
   MessageCircle, BookOpen, FolderLock, ShieldCheck, Scale, PiggyBank,
   Plus, Image as ImageIcon, Mic, FileText as FileIcon, Camera, Pencil,
@@ -10,25 +10,13 @@ import {
   TrendingUp, Activity, CalendarDays, Cloud, Sun, Moon, KeyRound, HardDrive,
   Building2, HandHeart, Gavel, PhoneCall, MapPin, Clock, FileCheck,
 } from "lucide-react";
-
-type Screen =
-  // Public
-  | "cycle-home" | "cycle-calendar" | "cycle-health" | "cycle-analytics" | "cycle-more"
-  | "cycle-privacy"
-  | "cycle-profile" | "cycle-my-health" | "cycle-reminders" | "cycle-medications"
-  | "cycle-goals" | "cycle-educational" | "cycle-settings" | "cycle-help" | "cycle-about"
-  // Setup
-  | "create-pin" | "create-decoy-pin" | "gesture" | "confirm-setup"
-  // GuardIA
-  | "guardia-pin" | "guardia-home" | "guardia-chat" | "guardia-rights"
-  | "guardia-proofs" | "guardia-plan" | "guardia-legal" | "guardia-legal-detail"
-  | "guardia-reserve" | "guardia-more"
-  | "guardia-profile" | "guardia-change-pin" | "guardia-change-decoy"
-  | "guardia-change-gesture" | "guardia-security" | "guardia-backup"
-  | "guardia-help-center" | "guardia-faq" | "guardia-about";
+import { GuardIAModule } from "./components/GuardIAModule";
+import { HealthModule } from "./components/HealthModule";
+import type { Screen } from "./types";
 
 const MAIN_PIN = "1234";
 const DECOY_PIN = "0000";
+const PRIVACY_SETUP_STORAGE_KEY = "cuidadelas-privacy-setup";
 
 // Cycle simulation constants (mocked)
 const CYCLE_LENGTH = 28;
@@ -61,6 +49,10 @@ export function MeuCicloApp() {
   const [flowerTaps, setFlowerTaps] = useState(0);
   const flowerTimer = useRef<number | null>(null);
   const [legalOption, setLegalOption] = useState<string>("");
+  const [privacyConfigured, setPrivacyConfigured] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(PRIVACY_SETUP_STORAGE_KEY) === "true";
+  });
 
   const go = (s: Screen) => setScreen(s);
 
@@ -84,14 +76,13 @@ export function MeuCicloApp() {
     }
   }, [flowerTaps]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(PRIVACY_SETUP_STORAGE_KEY, String(privacyConfigured));
+  }, [privacyConfigured]);
+
   const isGuard = screen.startsWith("guardia-") && screen !== "guardia-pin";
   const isPinScreen = screen === "guardia-pin";
-  const showCycleNav = [
-    "cycle-home","cycle-calendar","cycle-analytics","cycle-more","cycle-health",
-  ].includes(screen);
-  const showGuardNav = [
-    "guardia-home","guardia-rights","guardia-proofs","guardia-more",
-  ].includes(screen);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#ffeaf4] via-white to-[#f4e9ff] p-0 sm:p-6">
@@ -101,94 +92,92 @@ export function MeuCicloApp() {
         }`}
       >
         <div className="h-full overflow-y-auto pb-28">
-          {screen === "cycle-home" && <CycleHome go={go} />}
-          {screen === "cycle-calendar" && <CycleCalendar />}
-          {screen === "cycle-health" && <CycleHealth go={go} />}
-          {screen === "cycle-analytics" && <CycleAnalytics />}
-          {screen === "cycle-more" && <CycleMore go={go} />}
-          {screen === "cycle-privacy" && <CyclePrivacy go={go} />}
-          {screen === "cycle-profile" && <SimplePage go={go} back="cycle-more" title="Meu perfil" icon={User} sections={[
-            { t: "Nome", d: "Júlia Almeida" },
-            { t: "Idade", d: "27 anos" },
-            { t: "E-mail", d: "julia@exemplo.com" },
-            { t: "Objetivo atual", d: "Cuidar da saúde integral" },
-          ]} />}
-          {screen === "cycle-my-health" && <SimplePage go={go} back="cycle-more" title="Minha saúde" icon={HeartPulse} sections={[
-            { t: "Altura", d: "1,68 m" },
-            { t: "Peso", d: "62 kg" },
-            { t: "Alergias", d: "Nenhuma registrada" },
-            { t: "Condições", d: "Nenhuma" },
-          ]} />}
-          {screen === "cycle-reminders" && <RemindersPage go={go} />}
-          {screen === "cycle-medications" && <MedicationsPage go={go} />}
-          {screen === "cycle-goals" && <GoalsPage go={go} />}
-          {screen === "cycle-educational" && <EducationalPage go={go} />}
-          {screen === "cycle-settings" && <SettingsPage go={go} />}
-          {screen === "cycle-help" && <SimplePage go={go} back="cycle-more" title="Ajuda" icon={HelpCircle} sections={[
-            { t: "Central de suporte", d: "Fale conosco pelo e-mail suporte@cuidadelas.app" },
-            { t: "Perguntas frequentes", d: "Encontre respostas rápidas sobre uso do aplicativo." },
-            { t: "Termos de uso", d: "Leia nossos termos e política de privacidade." },
-          ]} />}
-          {screen === "cycle-about" && <SimplePage go={go} back="cycle-more" title="Sobre o aplicativo" icon={Info} sections={[
-            { t: "CuidaDelas", d: "Versão 1.0.0 — Protótipo" },
-            { t: "Missão", d: "Apoiar a saúde da mulher com informação, autocuidado e proteção." },
-            { t: "Feito com 💜", d: "Projeto de hackathon." },
-          ]} />}
-          {screen === "create-pin" && <CreatePin go={go} />}
-          {screen === "create-decoy-pin" && <CreateDecoyPin go={go} />}
-          {screen === "gesture" && <GestureScreen go={go} />}
-          {screen === "confirm-setup" && <ConfirmSetup go={go} />}
-          {screen === "guardia-pin" && <GuardPin go={go} />}
-          {screen === "guardia-home" && <GuardHome go={go} />}
-          {screen === "guardia-chat" && <GuardChat go={go} />}
-          {screen === "guardia-rights" && <GuardRights go={go} />}
-          {screen === "guardia-proofs" && <GuardProofs go={go} />}
-          {screen === "guardia-plan" && <GuardPlan go={go} />}
-          {screen === "guardia-legal" && <GuardLegal go={go} openDetail={(t) => { setLegalOption(t); go("guardia-legal-detail"); }} />}
-          {screen === "guardia-legal-detail" && <GuardLegalDetail go={go} option={legalOption} />}
-          {screen === "guardia-reserve" && <GuardReserve go={go} />}
-          {screen === "guardia-more" && <GuardMore go={go} />}
-          {screen === "guardia-profile" && <GuardSimplePage go={go} title="Meu perfil" icon={User} sections={[
-            { t: "Nome discreto", d: "Júlia" },
-            { t: "Cadastro", d: "Ativo desde maio de 2025" },
-            { t: "Contato de confiança", d: "Nenhum registrado" },
-          ]} />}
-          {screen === "guardia-change-pin" && <ChangePinScreen go={go} title="Alterar PIN principal" />}
-          {screen === "guardia-change-decoy" && <ChangePinScreen go={go} title="Alterar PIN de disfarce" decoy />}
-          {screen === "guardia-change-gesture" && <ChangeGestureScreen go={go} />}
-          {screen === "guardia-security" && <GuardSimplePage go={go} title="Configurações de segurança" icon={Shield} sections={[
-            { t: "Bloqueio automático", d: "Ativo — após 30 segundos" },
-            { t: "Ocultar notificações", d: "Ativado" },
-            { t: "Apagar após 5 tentativas erradas", d: "Ativado" },
-            { t: "Modo pânico", d: "Toque duplo no botão de energia" },
-          ]} />}
-          {screen === "guardia-backup" && <GuardSimplePage go={go} title="Backup seguro" icon={HardDrive} sections={[
-            { t: "Backup criptografado", d: "Último backup: hoje, 09:12" },
-            { t: "Recuperação por frase secreta", d: "Configurada" },
-            { t: "Exportar dados criptografados", d: "Disponível quando conectada à rede segura" },
-          ]} />}
-          {screen === "guardia-help-center" && <GuardSimplePage go={go} title="Central de ajuda" icon={HelpCircle} sections={[
-            { t: "Ligue 180", d: "Central de atendimento à mulher (24h, gratuito)." },
-            { t: "Ligue 190", d: "Emergência policial." },
-            { t: "Defensoria Pública", d: "Atendimento jurídico gratuito." },
-          ]} />}
-          {screen === "guardia-faq" && <GuardSimplePage go={go} title="Perguntas frequentes" icon={BookOpen} sections={[
-            { t: "O que é violência patrimonial?", d: "É o controle, retenção ou destruição de bens, documentos e recursos financeiros." },
-            { t: "Meus dados ficam seguros?", d: "Sim, tudo é criptografado e protegido por PIN." },
-            { t: "Alguém pode descobrir a GuardIA?", d: "O acesso é oculto por gesto e PIN de disfarce." },
-          ]} />}
-          {screen === "guardia-about" && <GuardSimplePage go={go} title="Sobre a GuardIA" icon={Info} sections={[
-            { t: "GuardIA", d: "Versão 1.0.0 — Protótipo hackathon" },
-            { t: "Propósito", d: "Apoiar mulheres em situação de violência patrimonial com discrição e segurança." },
-            { t: "Feito com 💜", d: "Este é um protótipo educativo." },
-          ]} />}
+          <HealthModule screen={screen} go={go} onFlowerTap={handleFlowerTap}>
+            {screen === "cycle-home" && <CycleHome go={go} />}
+            {screen === "cycle-calendar" && <CycleCalendar />}
+            {screen === "cycle-health" && <CycleHealth go={go} />}
+            {screen === "cycle-analytics" && <CycleAnalytics />}
+            {screen === "cycle-more" && <CycleMore go={go} />}
+            {screen === "cycle-privacy" && <CyclePrivacy go={go} configured={privacyConfigured} />}
+            {screen === "cycle-profile" && <SimplePage go={go} back="cycle-more" title="Meu perfil" icon={User} sections={[
+              { t: "Nome", d: "Júlia Almeida" },
+              { t: "Idade", d: "27 anos" },
+              { t: "E-mail", d: "julia@exemplo.com" },
+              { t: "Objetivo atual", d: "Cuidar da saúde integral" },
+            ]} />}
+            {screen === "cycle-my-health" && <SimplePage go={go} back="cycle-more" title="Minha saúde" icon={HeartPulse} sections={[
+              { t: "Altura", d: "1,68 m" },
+              { t: "Peso", d: "62 kg" },
+              { t: "Alergias", d: "Nenhuma registrada" },
+              { t: "Condições", d: "Nenhuma" },
+            ]} />}
+            {screen === "cycle-reminders" && <RemindersPage go={go} />}
+            {screen === "cycle-medications" && <MedicationsPage go={go} />}
+            {screen === "cycle-goals" && <GoalsPage go={go} />}
+            {screen === "cycle-educational" && <EducationalPage go={go} />}
+            {screen === "cycle-settings" && <SettingsPage go={go} />}
+            {screen === "cycle-help" && <SimplePage go={go} back="cycle-more" title="Ajuda" icon={HelpCircle} sections={[
+              { t: "Central de suporte", d: "Fale conosco pelo e-mail suporte@cuidadelas.app" },
+              { t: "Perguntas frequentes", d: "Encontre respostas rápidas sobre uso do aplicativo." },
+              { t: "Termos de uso", d: "Leia nossos termos e política de privacidade." },
+            ]} />}
+            {screen === "cycle-about" && <SimplePage go={go} back="cycle-more" title="Sobre o aplicativo" icon={Info} sections={[
+              { t: "CuidaDelas", d: "Versão 1.0.0 — Protótipo" },
+              { t: "Missão", d: "Apoiar a saúde da mulher com informação, autocuidado e proteção." },
+              { t: "Feito com 💜", d: "Projeto de hackathon." },
+            ]} />}
+            {screen === "create-pin" && <CreatePin go={go} />}
+            {screen === "create-decoy-pin" && <CreateDecoyPin go={go} />}
+            {screen === "gesture" && <GestureScreen go={go} />}
+            {screen === "confirm-setup" && <ConfirmSetup go={go} onFinish={() => setPrivacyConfigured(true)} />}
+          </HealthModule>
+          <GuardIAModule screen={screen} go={go}>
+            {screen === "guardia-pin" && <GuardPin go={go} />}
+            {screen === "guardia-home" && <GuardHome go={go} />}
+            {screen === "guardia-chat" && <GuardChat go={go} />}
+            {screen === "guardia-rights" && <GuardRights go={go} />}
+            {screen === "guardia-proofs" && <GuardProofs go={go} />}
+            {screen === "guardia-plan" && <GuardPlan go={go} />}
+            {screen === "guardia-legal" && <GuardLegal go={go} openDetail={(t) => { setLegalOption(t); go("guardia-legal-detail"); }} />}
+            {screen === "guardia-legal-detail" && <GuardLegalDetail go={go} option={legalOption} />}
+            {screen === "guardia-reserve" && <GuardReserve go={go} />}
+            {screen === "guardia-more" && <GuardMore go={go} />}
+            {screen === "guardia-profile" && <GuardSimplePage go={go} title="Meu perfil" icon={User} sections={[
+              { t: "Nome discreto", d: "Júlia" },
+              { t: "Cadastro", d: "Ativo desde maio de 2025" },
+              { t: "Contato de confiança", d: "Nenhum registrado" },
+            ]} />}
+            {screen === "guardia-change-pin" && <ChangePinScreen go={go} title="Alterar PIN principal" />}
+            {screen === "guardia-change-decoy" && <ChangePinScreen go={go} title="Alterar PIN de disfarce" decoy />}
+            {screen === "guardia-change-gesture" && <ChangeGestureScreen go={go} />}
+            {screen === "guardia-security" && <GuardSimplePage go={go} title="Configurações de segurança" icon={Shield} sections={[
+              { t: "Bloqueio automático", d: "Ativo — após 30 segundos" },
+              { t: "Ocultar notificações", d: "Ativado" },
+              { t: "Apagar após 5 tentativas erradas", d: "Ativado" },
+              { t: "Modo pânico", d: "Toque duplo no botão de energia" },
+            ]} />}
+            {screen === "guardia-backup" && <GuardSimplePage go={go} title="Backup seguro" icon={HardDrive} sections={[
+              { t: "Backup criptografado", d: "Último backup: hoje, 09:12" },
+              { t: "Recuperação por frase secreta", d: "Configurada" },
+              { t: "Exportar dados criptografados", d: "Disponível quando conectada à rede segura" },
+            ]} />}
+            {screen === "guardia-help-center" && <GuardSimplePage go={go} title="Central de ajuda" icon={HelpCircle} sections={[
+              { t: "Ligue 180", d: "Central de atendimento à mulher (24h, gratuito)." },
+              { t: "Ligue 190", d: "Emergência policial." },
+              { t: "Defensoria Pública", d: "Atendimento jurídico gratuito." },
+            ]} />}
+            {screen === "guardia-faq" && <GuardSimplePage go={go} title="Perguntas frequentes" icon={BookOpen} sections={[
+              { t: "O que é violência patrimonial?", d: "É o controle, retenção ou destruição de bens, documentos e recursos financeiros." },
+              { t: "Meus dados ficam seguros?", d: "Sim, tudo é criptografado e protegido por PIN." },
+              { t: "Alguém pode descobrir a GuardIA?", d: "O acesso é oculto por gesto e PIN de disfarce." },
+            ]} />}
+            {screen === "guardia-about" && <GuardSimplePage go={go} title="Sobre a GuardIA" icon={Info} sections={[
+              { t: "GuardIA", d: "Versão 1.0.0 — Protótipo hackathon" },
+              { t: "Propósito", d: "Apoiar mulheres em situação de violência patrimonial com discrição e segurança." },
+              { t: "Feito com 💜", d: "Este é um protótipo educativo." },
+            ]} />}
+          </GuardIAModule>
         </div>
-
-        {/* Bottom navigation */}
-        {showCycleNav && (
-          <CycleBottomNav current={screen} go={go} onFlowerTap={handleFlowerTap} />
-        )}
-        {showGuardNav && <GuardBottomNav current={screen} go={go} />}
       </div>
     </div>
   );
@@ -811,29 +800,51 @@ function SettingsPage({ go }: { go: (s: Screen) => void }) {
 
 /* ---------- Privacy + Setup (unchanged) ---------- */
 
-function CyclePrivacy({ go }: { go: (s: Screen) => void }) {
+function CyclePrivacy({ go, configured }: { go: (s: Screen) => void; configured: boolean }) {
   return (
     <div>
       <ScreenHeader title="Privacidade" onBack={() => go("cycle-more")} />
       <div className="px-5 mt-2">
-        <p className="text-sm text-[#7a7a8c]">Configure recursos privados para proteger informações sensíveis.</p>
+        <p className="text-sm text-[#7a7a8c]">
+          {configured
+            ? "Gerencie permissoes, dados da conta e preferencias de privacidade."
+            : "Configure recursos privados para proteger informacoes sensiveis."}
+        </p>
         <div className="mt-6 rounded-3xl bg-gradient-to-br from-[#f4e9ff] to-[#ffeaf4] p-5">
           <div className="flex items-center gap-3">
             <div className="h-11 w-11 rounded-2xl bg-white grid place-items-center"><Shield className="h-5 w-5 text-[#6c35d8]" /></div>
             <div>
-              <h3 className="font-extrabold text-[#211039]">Ativar área protegida</h3>
-              <p className="text-xs text-[#7a7a8c]">Camada de segurança para informações privadas e recursos de apoio.</p>
+              <h3 className="font-extrabold text-[#211039]">
+                {configured ? "Privacidade e seguranca" : "Ativar area protegida"}
+              </h3>
+              <p className="text-xs text-[#7a7a8c]">
+                {configured
+                  ? "Revise informacoes da conta, uso de dados e opcoes de seguranca do aplicativo."
+                  : "Camada de seguranca para informacoes privadas e recursos de apoio."}
+              </p>
             </div>
           </div>
         </div>
-        <div className="mt-4 space-y-3">
-          <ConfigCard icon={Lock} title="Criar PIN" desc="Defina um PIN principal para acessar sua área protegida." onClick={() => go("create-pin")} />
-          <ConfigCard icon={Fingerprint} title="PIN de disfarce" desc="Abre uma tela neutra caso você precise manter discrição." onClick={() => go("create-decoy-pin")} />
-          <ConfigCard icon={Flower2} title="Gesto secreto" desc="Escolha uma forma rápida e discreta de acesso." onClick={() => go("gesture")} />
-        </div>
-        <button onClick={() => go("create-pin")} className="mt-6 w-full rounded-2xl bg-[#f75ca2] text-white py-4 font-bold shadow-lg shadow-pink-200 active:scale-[.98] transition">
-          Configurar agora
-        </button>
+        {configured ? (
+          <div className="mt-4 space-y-3">
+            <ConfigCard icon={Shield} title="Permissoes do aplicativo" desc="Controle acesso a notificacoes, camera e armazenamento." onClick={() => {}} />
+            <ConfigCard icon={FileText} title="Termos de uso" desc="Consulte as regras de utilizacao e responsabilidades do app." onClick={() => {}} />
+            <ConfigCard icon={Info} title="Politica de privacidade" desc="Veja como seus dados sao tratados e protegidos." onClick={() => {}} />
+            <ConfigCard icon={User} title="Gerenciar dados da conta" desc="Atualize informacoes pessoais e preferencias salvas." onClick={() => {}} />
+            <ConfigCard icon={X} title="Excluir conta" desc="Solicite a remocao da conta e dos dados vinculados ao dispositivo." onClick={() => {}} />
+          </div>
+        ) : (
+          <>
+            <div className="mt-4 space-y-3">
+              <ConfigCard icon={Lock} title="Criar PIN" desc="Defina um PIN principal para acessar sua area protegida." onClick={() => go("create-pin")} />
+              <ConfigCard icon={Fingerprint} title="PIN de disfarce" desc="Abre uma tela neutra caso voce precise manter discricao." onClick={() => go("create-decoy-pin")} />
+              <ConfigCard icon={Flower2} title="Gesto secreto" desc="Escolha uma forma rapida e discreta de acesso." onClick={() => go("gesture")} />
+            </div>
+            <button onClick={() => go("create-pin")} className="mt-6 w-full rounded-2xl bg-[#f75ca2] text-white py-4 font-bold shadow-lg shadow-pink-200 active:scale-[.98] transition">
+              Configurar agora
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -946,7 +957,7 @@ function GestureScreen({ go }: { go: (s: Screen) => void }) {
   );
 }
 
-function ConfirmSetup({ go }: { go: (s: Screen) => void }) {
+function ConfirmSetup({ go, onFinish }: { go: (s: Screen) => void; onFinish: () => void }) {
   return (
     <div className="px-6 pt-16 text-center">
       <div className="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-[#f75ca2] to-[#6c35d8] grid place-items-center shadow-xl">
@@ -959,7 +970,7 @@ function ConfirmSetup({ go }: { go: (s: Screen) => void }) {
         <InfoRow n="2" t="Digite seu PIN principal." />
         <InfoRow n="3" t="Use o PIN de disfarce se precisar manter discrição." />
       </div>
-      <button onClick={() => go("cycle-home")} className="mt-8 w-full rounded-2xl bg-[#f75ca2] text-white py-4 font-bold">Entendi</button>
+      <button onClick={() => { onFinish(); go("cycle-home"); }} className="mt-8 w-full rounded-2xl bg-[#f75ca2] text-white py-4 font-bold">Entendi</button>
       <p className="text-xs text-[#7a7a8c] mt-4">Dica: para testar, toque 3x no ícone da flor na barra inferior. PIN: 1234</p>
     </div>
   );
@@ -1668,58 +1679,5 @@ function ChangeGestureScreen({ go }: { go: (s: Screen) => void }) {
         <button onClick={() => go("guardia-more")} className="mt-8 w-full rounded-2xl bg-[#f75ca2] text-white py-4 font-bold">Salvar gesto</button>
       </div>
     </div>
-  );
-}
-
-/* ---------- Bottom navs ---------- */
-
-function CycleBottomNav({
-  current, go, onFlowerTap,
-}: { current: Screen; go: (s: Screen) => void; onFlowerTap: () => void }) {
-  return (
-    <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-[#f7e7f0] px-5 py-2 flex items-center justify-between">
-      <NavBtn icon={Home} label="Início" active={current==="cycle-home"} onClick={() => go("cycle-home")} />
-      <NavBtn icon={Calendar} label="Agenda" active={current==="cycle-calendar"} onClick={() => go("cycle-calendar")} />
-      <button onClick={onFlowerTap}
-        className="h-14 w-14 -mt-6 rounded-full bg-gradient-to-br from-[#f75ca2] to-[#c66bff] grid place-items-center shadow-lg shadow-pink-300 text-white active:scale-95 transition"
-        aria-label="Flor">
-        <Flower2 className="h-6 w-6" />
-      </button>
-      <NavBtn icon={BarChart3} label="Análises" active={current==="cycle-analytics"} onClick={() => go("cycle-analytics")} />
-      <NavBtn icon={MoreHorizontal} label="Mais" active={current==="cycle-more"} onClick={() => go("cycle-more")} />
-    </div>
-  );
-}
-
-function NavBtn({ icon: Icon, label, active, onClick }: { icon: any; label: string; active?: boolean; onClick?: () => void }) {
-  return (
-    <button onClick={onClick} className="flex flex-col items-center gap-0.5 py-1 px-2">
-      <Icon className={`h-5 w-5 ${active ? "text-[#f75ca2]" : "text-[#a5a5b5]"}`} />
-      <span className={`text-[10px] font-semibold ${active ? "text-[#f75ca2]" : "text-[#a5a5b5]"}`}>{label}</span>
-    </button>
-  );
-}
-
-function GuardBottomNav({ current, go }: { current: Screen; go: (s: Screen) => void }) {
-  return (
-    <div className="absolute bottom-0 left-0 right-0 bg-[#211039]/95 backdrop-blur border-t border-white/10 px-5 py-2 flex items-center justify-between">
-      <GNav icon={Home} label="Início" active={current==="guardia-home"} onClick={() => go("guardia-home")} />
-      <GNav icon={BookOpen} label="Direitos" active={current==="guardia-rights"} onClick={() => go("guardia-rights")} />
-      <button onClick={() => go("guardia-proofs")}
-        className="h-14 w-14 -mt-6 rounded-full bg-gradient-to-br from-[#f75ca2] to-[#6c35d8] grid place-items-center shadow-lg shadow-purple-900/50 text-white">
-        <Plus className="h-6 w-6" />
-      </button>
-      <GNav icon={FolderLock} label="Provas" active={current==="guardia-proofs"} onClick={() => go("guardia-proofs")} />
-      <GNav icon={MoreHorizontal} label="Mais" active={current==="guardia-more"} onClick={() => go("guardia-more")} />
-    </div>
-  );
-}
-
-function GNav({ icon: Icon, label, active, onClick }: { icon: any; label: string; active?: boolean; onClick?: () => void }) {
-  return (
-    <button onClick={onClick} className="flex flex-col items-center gap-0.5 py-1 px-2">
-      <Icon className={`h-5 w-5 ${active ? "text-[#f75ca2]" : "text-white/50"}`} />
-      <span className={`text-[10px] font-semibold ${active ? "text-[#f75ca2]" : "text-white/50"}`}>{label}</span>
-    </button>
   );
 }
